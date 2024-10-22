@@ -6,6 +6,7 @@ import { SETTING } from "..";
 
 export interface Ticker extends Partial<TickerLinearInverseV5> {
   symbol: Symbol;
+  tickDirection?: "PlusTick" | "ZeroPlusTick" | "MinusTick" | "ZeroMinusTick";
 }
 
 interface CoinsHistoryRecord extends Partial<Record<keyof Ticker, string[]>> {
@@ -49,7 +50,6 @@ const updateCoinsHistory = (data: Ticker) => {
 const getWSParams = () => {
   try {
     const args = getCoinsSymbol().map((symbol) => `tickers.${symbol}`);
-    console.log(args);
     const subscribe = {
       op: "subscribe",
       args: args,
@@ -100,4 +100,89 @@ const watchTicker: WatchTicker = (afterUpdate) => {
   };
 };
 
-export { watchTicker };
+const getHistoryCoin = ({
+  symbol,
+  interval,
+}: {
+  symbol: Symbol;
+  interval: number;
+}) => {
+  const coin = coinsHistory[symbol]?.slice(-interval);
+  return coin ? coin : [];
+};
+
+const getHistoryCoinAsCandles = ({
+  symbol,
+  interval,
+}: {
+  symbol: Symbol;
+  interval: number;
+}) => {
+  const history = getHistoryCoin({ symbol, interval });
+  return history.map((item) => ({
+    timestamp: item.timestamp,
+    amountChange: item.symbol?.length ?? 0,
+    bid1Price: createCandle(item?.bid1Price),
+    bid1Size: createCandle(item?.bid1Size),
+    ask1Price: createCandle(item?.ask1Price),
+    ask1Size: createCandle(item?.ask1Size),
+    price24hPcnt: createCandle(item?.price24hPcnt),
+    lastPrice: createCandle(item?.lastPrice),
+    turnover24h: createCandle(item?.turnover24h),
+    volume24h: createCandle(item?.volume24h),
+    markPrice: createCandle(item.markPrice),
+    tickDirection: createTickDirectionCandle(item?.tickDirection),
+  }));
+};
+
+const createCandle = (list?: string[]) => {
+  if (!list || list.length === 0) return null;
+
+  // Преобразуем строковые значения в числа
+  const numbers = list.map(Number);
+
+  return {
+    open: numbers[0], // Первое значение массива
+    close: numbers[numbers.length - 1], // Последнее значение массива
+    index: numbers.reduce((acc, num) => acc + num, 0) / numbers.length, // Среднее значение
+    high: Math.max(...numbers), // Максимальное значение
+    low: Math.min(...numbers), // Минимальное значение
+    quantity: numbers.length, // Длина массива
+  };
+};
+
+const createTickDirectionCandle = (list?: string[]) => {
+  if (!list || list.length === 0) return null;
+
+  const counts = {
+    PlusTick: 0,
+    ZeroPlusTick: 0,
+    MinusTick: 0,
+    ZeroMinusTick: 0,
+  };
+
+  // Подсчитываем количество каждого значения
+  list.forEach((item) => {
+    if (counts[item as keyof typeof counts] !== undefined) {
+      counts[item as keyof typeof counts]++;
+    }
+  });
+
+  // Определяем самое часто встречающееся значение
+  const maxValue = Object.keys(counts).reduce((a, b) =>
+    counts[a as keyof typeof counts] > counts[b as keyof typeof counts] ? a : b
+  );
+
+  return {
+    open: list[0], // Первое значение массива
+    close: list[list.length - 1], // Последнее значение массива
+    quantity: list.length, // Длина массива
+    plusTickQuantity: counts.PlusTick, // Количество значений PlusTick в массиве
+    zeroPlusTickQuantity: counts.ZeroPlusTick, // Количество значений ZeroPlusTick в массиве
+    minusTickQuantity: counts.MinusTick, // Количество значений MinusTick в массиве
+    zeroMinusTickQuantity: counts.ZeroMinusTick, // Количество значений ZeroMinusTick в массиве
+    max: maxValue, // Самое встречающееся значение в массиве
+  };
+};
+
+export { watchTicker, getHistoryCoinAsCandles };

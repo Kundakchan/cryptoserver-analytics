@@ -7,6 +7,7 @@ import { client } from "../client";
 import { Symbol } from "../market/symbols";
 
 import chalk from "chalk";
+import { convertTimestampToDate } from "../utils";
 
 interface InstrumentInfo
   extends Partial<Record<Symbol, LinearInverseInstrumentInfoV5>> {}
@@ -37,15 +38,18 @@ const fetchCoins = async () => {
 const fetchOpenInterest = async ({
   symbol,
   interval,
+  limit = 50,
 }: {
   symbol: Symbol;
   interval: OpenInterestIntervalV5;
+  limit?: number;
 }) => {
   try {
     const result = await client.getOpenInterest({
       category: "linear",
       symbol: symbol,
       intervalTime: interval,
+      limit: limit,
     });
 
     return result.result.list.map((item) => ({
@@ -110,12 +114,45 @@ const fetchKline = async ({
   }
 };
 
-const getCoinsSymbol = () => Object.keys(instrumentsInfo);
+const fetchMarkPriceKline = async ({
+  symbol,
+  interval,
+  limit = 50,
+}: {
+  symbol: Symbol;
+  interval: KlineIntervalV3;
+  limit: number;
+}) => {
+  try {
+    const result = await client.getMarkPriceKline({
+      category: "linear",
+      symbol: symbol,
+      interval: interval,
+      limit: limit,
+    });
+
+    return result.result.list.map((item) => ({
+      startTime: new Date(Number(item[0])),
+      openPrice: item[1],
+      highPrice: item[2],
+      lowPrice: item[3],
+      closePrice: item[4],
+    }));
+  } catch (error) {
+    console.error(
+      `Ошибка получения истории формирование mark price: ${symbol}`
+    );
+    throw error;
+  }
+};
+
+const getCoinsSymbol = () => Object.keys(instrumentsInfo) as Symbol[];
 
 export {
   fetchOpenInterest,
   fetchLongShortRatio,
   fetchKline,
+  fetchMarkPriceKline,
   fetchCoins,
   getCoinsSymbol,
 };
