@@ -53,4 +53,4 @@ function calculateMedian(numbers) {
   }
 }
 
-export { getMarkPriceStats };
+export { getMarkPriceStats, calculateMedian };

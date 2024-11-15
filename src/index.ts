@@ -24,32 +24,25 @@ const handleError = (error: unknown, context: string) => {
   console.error(`[${new Date().toISOString()}] Ошибка в ${context}:`, error);
 };
 
-// Флаг, указывающий на выполнение проверки монет
-let isCheckingCoin = false;
-
 // Функция проверки времени и запуска процесса проверки монет
-const startCoinChecker = () => {
-  setInterval(async () => {
+const startCoinChecker = async () => {
+  while (true) {
     const currentMinutes = new Date().getMinutes();
 
     // Проверяем кратность минут пяти
-    if (currentMinutes % SETTING.COIN_CHECK_FREQUENCY !== 0) return;
-
-    // Если проверка уже идёт, не запускаем новую
-    if (isCheckingCoin) return;
-
-    // Устанавливаем флаг блокировки
-    isCheckingCoin = true;
-
-    try {
-      await checkCoin();
-    } catch (error) {
-      handleError(error, "проверке монет");
-    } finally {
-      // Сбрасываем флаг после завершения проверки
-      isCheckingCoin = false;
+    if (currentMinutes % SETTING.COIN_CHECK_FREQUENCY === 0) {
+      try {
+        await checkCoin();
+      } catch (error) {
+        handleError(error, "проверке монет");
+      }
     }
-  }, SETTING.TIME_CHECK_COIN_INTERVAL); // Проверяем раз в минуту
+
+    // Ждём указанный интервал перед следующим запуском
+    await new Promise((resolve) =>
+      setTimeout(resolve, SETTING.TIME_CHECK_COIN_INTERVAL)
+    );
+  }
 };
 
 // Основная функция проверки монет
@@ -72,7 +65,7 @@ const app = async () => {
   try {
     await fetchCoins();
     watchTicker();
-    startCoinChecker();
+    startCoinChecker(); // Запускаем проверку монет
 
     // setInterval(() => {
     //   webSocketService.broadcastData(TestData);

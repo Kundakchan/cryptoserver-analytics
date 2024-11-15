@@ -1,5 +1,6 @@
 import { fetchOpenInterest } from "../../market";
 import { sum } from "../../utils";
+import { calculateMedian } from "./markPrice";
 interface Data extends Awaited<ReturnType<typeof fetchOpenInterest>> {}
 
 interface GetOpenInterestStats {
@@ -7,7 +8,10 @@ interface GetOpenInterestStats {
 }
 const getOpenInterestStats: GetOpenInterestStats = (data) => {
   const differenceInAmounts = calculatePercentageChange(data);
-  return sum(differenceInAmounts);
+  // console.log("Median", calculateMedian(differenceInAmounts));
+  // console.log("sum", sum(differenceInAmounts));
+  return calculateMedian(differenceInAmounts);
+  // return sum(differenceInAmounts);
 };
 
 function calculatePercentageChange(data: Data) {
