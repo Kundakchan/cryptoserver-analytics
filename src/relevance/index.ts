@@ -131,9 +131,7 @@ const getNormalizedStatistics = () => {
     };
   });
 
-  return transformData(localCoins as InputData)
-    .filter((item) => item.side === "Buy")
-    .slice(0, 10);
+  return transformData(localCoins as InputData).slice(0, 10);
 };
 
 interface SymbolData {

@@ -8,8 +8,6 @@ import {
 import { watchTicker } from "./ticker";
 import { WebSocketService } from "./webSocketService";
 
-import TestData from "../TestData";
-
 export const SETTING = {
   TIME_UPDATE_HISTORY_INDEX: 5 * 60 * 1000, // миллисекунды
   TIME_CHECK_COIN_INTERVAL: 10 * 1000, // Интервал проверки времени (раз в минуту)
@@ -66,10 +64,6 @@ const app = async () => {
     await fetchCoins();
     watchTicker();
     startCoinChecker(); // Запускаем проверку монет
-
-    // setInterval(() => {
-    //   webSocketService.broadcastData(TestData);
-    // }, 10 * 1000);
   } catch (error) {
     handleError(error, "запуске приложения");
   }
